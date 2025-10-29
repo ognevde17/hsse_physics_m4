@@ -41,8 +41,8 @@ def plot_energy(results: Dict, ball_mass: float, g: float = 9.81,
     kinetic_energy = results['energy']
     positions = results['position']
     
-    angle_rad = np.radians(surface_angle)
-    height_change = -positions[:, 0] * np.sin(angle_rad)
+    initial_y = positions[0, 1]
+    height_change = positions[:, 1] - initial_y
     potential_energy = ball_mass * g * height_change
     
     total_energy = kinetic_energy + potential_energy

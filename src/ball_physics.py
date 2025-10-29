@@ -80,62 +80,74 @@ class BallDynamics:
         self.ball.velocity = np.array([vx, vy])
         self.ball.angular_velocity = np.array([wx, wy, wz])
         
-        F_gravity = np.array([
-            self.ball.mass * self.g * np.sin(self.surface.angle),
-            0.0
-        ])
-        
         N = self.normal_force()
-        
         f_max = self.surface.friction_coeff * N
         
-        f_required = (2.0/7.0) * np.abs(F_gravity[0])
-        
-        if f_required > f_max and self.surface.angle > 1e-6:
-            self.is_slipping = True
+        if abs(self.surface.angle) > 1e-6:
+            cos_theta = np.cos(self.surface.angle)
+            sin_theta = np.sin(self.surface.angle)
             
-            v_magnitude = np.sqrt(vx**2 + vy**2)
+            incline_direction = np.array([cos_theta, -sin_theta])
             
-            if v_magnitude > 1e-10:
-                friction_direction = -np.array([vx, vy]) / v_magnitude
-                F_friction = self.surface.friction_coeff * N * friction_direction
-            else:
-                if abs(F_gravity[0]) > 1e-10:
-                    F_friction = np.array([-np.sign(F_gravity[0]) * self.surface.friction_coeff * N, 0.0])
-                else:
-                    F_friction = np.array([0.0, 0.0])
+            f_required = (2.0/7.0) * self.ball.mass * self.g * sin_theta
             
-            acceleration = (F_gravity + F_friction) / self.ball.mass
-            
-            r_contact = np.array([0, 0, -self.ball.radius])
-            F_friction_3d = np.array([F_friction[0], F_friction[1], 0])
-            torque = np.cross(r_contact, F_friction_3d)
-            
-            angular_acceleration = torque / self.ball.moment_of_inertia
-        else:
-            self.is_slipping = False
-            
-            if abs(self.surface.angle) > 1e-6:
-                a_magnitude = (5.0/7.0) * self.g * np.sin(self.surface.angle)
-                acceleration = np.array([a_magnitude, 0.0])
-            else:
+            if f_required > f_max:
+                self.is_slipping = True
+                
                 v_magnitude = np.sqrt(vx**2 + vy**2)
                 
-                if v_magnitude > 1e-8:
-                    v_direction = np.array([vx, vy]) / v_magnitude
-                    
-                    a_max = (2.0/7.0) * self.surface.friction_coeff * self.g
-                    acceleration = -a_max * v_direction
+                if v_magnitude > 1e-10:
+                    friction_direction = -np.array([vx, vy]) / v_magnitude
+                    F_friction = self.surface.friction_coeff * N * friction_direction
                 else:
-                    acceleration = np.zeros(2)
-            
-            if self.ball.radius > 1e-10:
-                angular_acceleration = np.array([
-                    acceleration[1] / self.ball.radius,
-                    -acceleration[0] / self.ball.radius,
-                    0.0
-                ])
+                    F_friction = -self.surface.friction_coeff * N * incline_direction
+                
+                F_gravity = np.array([0.0, -self.ball.mass * self.g])
+                F_normal = N * np.array([-sin_theta, cos_theta])
+                
+                acceleration = (F_gravity + F_normal + F_friction) / self.ball.mass
+                
+                r_contact = np.array([0, 0, -self.ball.radius])
+                F_friction_3d = np.array([F_friction[0], F_friction[1], 0])
+                torque = np.cross(r_contact, F_friction_3d)
+                
+                angular_acceleration = torque / self.ball.moment_of_inertia
             else:
+                self.is_slipping = False
+                
+                a_magnitude = (5.0/7.0) * self.g * sin_theta
+                acceleration = a_magnitude * incline_direction
+                
+                if self.ball.radius > 1e-10:
+                    angular_acceleration = np.array([
+                        acceleration[1] / self.ball.radius,
+                        -acceleration[0] / self.ball.radius,
+                        0.0
+                    ])
+                else:
+                    angular_acceleration = np.zeros(3)
+        else:
+            v_magnitude = np.sqrt(vx**2 + vy**2)
+            
+            if v_magnitude > 1e-8:
+                self.is_slipping = False
+                
+                v_direction = np.array([vx, vy]) / v_magnitude
+                
+                a_max = (2.0/7.0) * self.surface.friction_coeff * self.g
+                acceleration = -a_max * v_direction
+                
+                if self.ball.radius > 1e-10:
+                    angular_acceleration = np.array([
+                        acceleration[1] / self.ball.radius,
+                        -acceleration[0] / self.ball.radius,
+                        0.0
+                    ])
+                else:
+                    angular_acceleration = np.zeros(3)
+            else:
+                self.is_slipping = False
+                acceleration = np.zeros(2)
                 angular_acceleration = np.zeros(3)
         
         return np.array([vx, vy, acceleration[0], acceleration[1], 

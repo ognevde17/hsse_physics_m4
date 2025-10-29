@@ -66,7 +66,8 @@ class TestInclineMotion(unittest.TestCase):
         a_analytical = (5.0/7.0) * g * np.sin(angle_rad)
         
         time_idx = np.argmin(np.abs(results['time'] - 0.1))
-        v_computed = results['velocity'][time_idx, 0]
+        v_vec = results['velocity'][time_idx]
+        v_computed = np.linalg.norm(v_vec)
         t = results['time'][time_idx]
         a_computed = v_computed / t
         
@@ -92,12 +93,12 @@ class TestInclineMotion(unittest.TestCase):
         
         results = sim.get_results()
         
-        distances = results['position'][:, 0]
-        idx = np.argmin(np.abs(distances - distance))
+        angle_rad = np.radians(angle)
+        distances_along_incline = results['position'][:, 0] / np.cos(angle_rad)
+        idx = np.argmin(np.abs(distances_along_incline - distance))
         
         v_computed = np.linalg.norm(results['velocity'][idx])
         
-        angle_rad = np.radians(angle)
         h = distance * np.sin(angle_rad)
         v_analytical = np.sqrt((10.0/7.0) * g * h)
         
@@ -125,9 +126,9 @@ class TestEnergyConservation(unittest.TestCase):
         
         results = sim.get_results()
         
-        angle_rad = np.radians(angle)
         kinetic = results['energy']
-        height_change = -results['position'][:, 0] * np.sin(angle_rad)
+        initial_y = results['position'][0, 1]
+        height_change = results['position'][:, 1] - initial_y
         potential = mass * g * height_change
         total_energy = kinetic + potential
         

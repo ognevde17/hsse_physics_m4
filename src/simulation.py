@@ -108,10 +108,11 @@ class Simulation:
         if len(self.energies) < 2:
             return True
         
+        initial_y = self.positions[0][1]
         initial_energy = self.energies[0]
         
         for i, pos in enumerate(self.positions):
-            height_change = -pos[0] * np.sin(self.surface.angle)
+            height_change = pos[1] - initial_y
             potential_energy = self.ball.mass * self.g * height_change
             total_energy = self.energies[i] + potential_energy
             
