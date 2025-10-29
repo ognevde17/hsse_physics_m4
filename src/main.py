@@ -236,17 +236,15 @@ def scenario3_horizontal():
     if density_check is not True:
         print(f"     {density_check}")
     
-    print("\n Начальная скорость:")
-    vx = input_float("  Скорость по X (м/с)", default=3.0, 
-                     min_val=-MAX_REASONABLE_SPEED, max_val=MAX_REASONABLE_SPEED,
-                     physical_check=lambda v: check_speed_physical(abs(v)))
-    vy = input_float("  Скорость по Y (м/с)", default=2.0, 
+    print("\n Начальная скорость (по оси X, т.к. на горизонтали):")
+    vx = input_float("  Скорость (м/с)", default=3.0, 
                      min_val=-MAX_REASONABLE_SPEED, max_val=MAX_REASONABLE_SPEED,
                      physical_check=lambda v: check_speed_physical(abs(v)))
     
-    v_total = np.sqrt(vx**2 + vy**2)
-    if v_total > 50:
-        print(f"     Высокая скорость {v_total:.1f} м/с ({v_total*3.6:.1f} км/ч)!")
+    vy = 0.0
+    
+    if abs(vx) > 50:
+        print(f"     Высокая скорость {abs(vx):.1f} м/с ({abs(vx)*3.6:.1f} км/ч)!")
     
     print("\n Параметры поверхности:")
     friction = input_float("  Коэффициент трения", default=0.3, 
@@ -256,9 +254,7 @@ def scenario3_horizontal():
     total_time = input_float("  Время симуляции (сек)", default=5.0, 
                             min_val=0.01, max_val=MAX_REASONABLE_TIME)
     
-    v_magnitude = np.sqrt(vx**2 + vy**2)
-    
-    wx = vy / radius if radius > 0 else 0.0
+    wx = 0.0
     wy = -vx / radius if radius > 0 else 0.0
     
     ball = Ball(
@@ -280,7 +276,7 @@ def scenario3_horizontal():
     print("\n Симуляция завершена!")
     print(f"    Начальная скорость: {v_magnitude:.2f} м/с")
     print(f"    Конечная скорость: {np.linalg.norm(results['velocity'][-1]):.2f} м/с")
-    print(f"   📏 Пройденное расстояние: {np.linalg.norm(results['position'][-1] - results['position'][0]):.2f} м")
+    print(f"    Пройденное расстояние: {np.linalg.norm(results['position'][-1] - results['position'][0]):.2f} м")
     
     if input_yes_no("\n Показать графики?", default=True):
         plot_all_results(results, mass, radius, surface_angle=0.0)

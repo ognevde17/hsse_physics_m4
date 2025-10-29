@@ -135,12 +135,15 @@ class BallDynamics:
                 v_direction = np.array([vx, vy]) / v_magnitude
                 
                 a_max = (2.0/7.0) * self.surface.friction_coeff * self.g
-                acceleration = -a_max * v_direction
+                ax = -a_max * v_direction[0]
+                ay = -a_max * v_direction[1]
+                
+                acceleration = np.array([ax, ay])
                 
                 if self.ball.radius > 1e-10:
                     angular_acceleration = np.array([
-                        acceleration[1] / self.ball.radius,
-                        -acceleration[0] / self.ball.radius,
+                        ay / self.ball.radius,
+                        -ax / self.ball.radius,
                         0.0
                     ])
                 else:

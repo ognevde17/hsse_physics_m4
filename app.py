@@ -171,12 +171,12 @@ def scenario_3_horizontal():
         
         st.subheader("🚀 Начальная скорость")
         vx = st.slider("Скорость по X (м/с)", -MAX_REASONABLE_SPEED, MAX_REASONABLE_SPEED, 3.0, key="hor_vx")
-        vy = st.slider("Скорость по Y (м/с)", -MAX_REASONABLE_SPEED, MAX_REASONABLE_SPEED, 2.0, key="hor_vy")
+        vy = 0.0
         
-        v_total = np.sqrt(vx**2 + vy**2)
-        st.metric("Общая скорость", f"{v_total:.2f} м/с", f"{v_total*3.6:.1f} км/ч")
+        st.info("ℹ️ На горизонтальной поверхности Y координата (высота) не меняется, поэтому vy = 0")
+        st.metric("Скорость", f"{abs(vx):.2f} м/с", f"{abs(vx)*3.6:.1f} км/ч")
         
-        if v_total > 50:
+        if abs(vx) > 50:
             st.warning(f"⚠️ Высокая скорость!")
     
     with col2:
@@ -202,7 +202,9 @@ def scenario_4_walls():
         
         st.subheader("🚀 Начальная скорость")
         vx = st.slider("Скорость по X (м/с)", -MAX_REASONABLE_SPEED, MAX_REASONABLE_SPEED, 2.0, key="wall_vx")
-        vy = st.slider("Скорость по Y (м/с)", -MAX_REASONABLE_SPEED, MAX_REASONABLE_SPEED, 1.5, key="wall_vy")
+        vy = 0.0
+        
+        st.info("ℹ️ Движение на горизонтали: vy = 0")
     
     with col2:
         st.subheader("🧱 Параметры стен")
@@ -313,7 +315,7 @@ def run_simulation_slipping(mass, radius, angle, friction, total_time):
 
 def run_simulation_horizontal(mass, radius, vx, vy, friction, total_time):
     with st.spinner("⏳ Выполняется симуляция..."):
-        wx = vy / radius if radius > 0 else 0.0
+        wx = 0.0
         wy = -vx / radius if radius > 0 else 0.0
         
         ball = Ball(mass, radius, [0, 0], [vx, vy], [wx, wy, 0.0])
@@ -325,7 +327,7 @@ def run_simulation_horizontal(mass, radius, vx, vy, friction, total_time):
         
         st.success("✅ Симуляция завершена!")
         
-        v_initial = np.sqrt(vx**2 + vy**2)
+        v_initial = abs(vx)
         v_final = np.linalg.norm(results['velocity'][-1])
         distance = np.linalg.norm(results['position'][-1] - results['position'][0])
         
@@ -342,7 +344,7 @@ def run_simulation_horizontal(mass, radius, vx, vy, friction, total_time):
 
 def run_simulation_walls(mass, radius, vx, vy, friction, boundary, walls, restitution, total_time):
     with st.spinner("⏳ Выполняется симуляция..."):
-        wx = vy / radius if radius > 0 else 0.0
+        wx = 0.0
         wy = -vx / radius if radius > 0 else 0.0
         
         ball = Ball(mass, radius, [0, 0], [vx, vy], [wx, wy, 0.0])
