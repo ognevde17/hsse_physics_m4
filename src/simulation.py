@@ -3,10 +3,8 @@ import numpy as np
 from typing import List, Dict, Callable
 from scipy.integrate import odeint
 
-try:
-    from .ball_physics import Ball, Surface, BallDynamics
-except ImportError:
-    from ball_physics import Ball, Surface, BallDynamics
+from .ball_physics import Ball, Surface, BallDynamics
+
 
 
 class Simulation:

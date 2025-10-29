@@ -4,8 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from src.ball_physics import Ball, Surface
 from src.simulation import Simulation, MultiballSimulation
-from src.visualization import plot_trajectory, plot_energy, plot_velocity, plot_angular_velocity, plot_slipping_regions
+from src.visualization import plot_trajectory, plot_energy, plot_velocity, plot_angular_velocity, plot_slipping_regions, create_animation, create_multiball_animation
 import io
+import os
+import tempfile
 
 st.set_page_config(
     page_title="Моделирование движения шара",
@@ -36,6 +38,16 @@ def check_density(mass, radius):
         return False, f"⚠️ Плотность {density:.1f} кг/м³ слишком велика!"
     
     return True, f"✅ Плотность: {density:.1f} кг/м³"
+
+
+def show_animation(results, ball_radius, surface_angle=0.0, walls=None):
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.gif') as tmp:
+        anim = create_animation(results, ball_radius, surface_angle, walls, save_path=tmp.name, fps=15)
+        plt.close()
+        
+        if os.path.exists(tmp.name):
+            st.image(tmp.name)
+            os.unlink(tmp.name)
 
 
 def main():
@@ -354,7 +366,7 @@ def run_simulation_walls(mass, radius, vx, vy, friction, boundary, walls, restit
         with col3:
             st.metric("Потеря энергии", f"{energy_loss:.1f}%")
         
-        display_plots(results, mass, radius, 0.0, "walls")
+        display_plots(results, mass, radius, 0.0, "walls", walls=walls)
 
 
 def run_simulation_multiball(n_balls, mass, radius, friction, boundary, restitution, total_time):
@@ -408,10 +420,10 @@ def run_simulation_multiball(n_balls, mass, radius, friction, boundary, restitut
         plt.close()
 
 
-def display_plots(results, mass, radius, angle, prefix):
+def display_plots(results, mass, radius, angle, prefix, walls=None):
     st.subheader("📊 Результаты симуляции")
     
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Траектория", "Энергия", "Скорость", "Угловая скорость", "Режимы"])
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Траектория", "Энергия", "Скорость", "Угловая скорость", "Режимы", "🎬 Анимация"])
     
     with tab1:
         fig = plot_trajectory(results, surface_angle=angle)
@@ -440,6 +452,10 @@ def display_plots(results, mass, radius, angle, prefix):
             plt.close()
         else:
             st.info("Данные о проскальзывании недоступны")
+    
+    with tab6:
+        st.info("🎬 Создание анимации (может занять несколько секунд)...")
+        show_animation(results, radius, angle, walls)
 
 
 if __name__ == "__main__":
