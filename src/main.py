@@ -236,15 +236,17 @@ def scenario3_horizontal():
     if density_check is not True:
         print(f"     {density_check}")
     
-    print("\n Начальная скорость (по оси X, т.к. на горизонтали):")
-    vx = input_float("  Скорость (м/с)", default=3.0, 
+    print("\n Начальная скорость (в горизонтальной плоскости):")
+    vx = input_float("  Скорость по X (м/с)", default=3.0, 
+                     min_val=-MAX_REASONABLE_SPEED, max_val=MAX_REASONABLE_SPEED,
+                     physical_check=lambda v: check_speed_physical(abs(v)))
+    vy = input_float("  Скорость по Y (м/с)", default=2.0, 
                      min_val=-MAX_REASONABLE_SPEED, max_val=MAX_REASONABLE_SPEED,
                      physical_check=lambda v: check_speed_physical(abs(v)))
     
-    vy = 0.0
-    
-    if abs(vx) > 50:
-        print(f"     Высокая скорость {abs(vx):.1f} м/с ({abs(vx)*3.6:.1f} км/ч)!")
+    v_total = np.sqrt(vx**2 + vy**2)
+    if v_total > 50:
+        print(f"     Высокая скорость {v_total:.1f} м/с ({v_total*3.6:.1f} км/ч)!")
     
     print("\n Параметры поверхности:")
     friction = input_float("  Коэффициент трения", default=0.3, 
@@ -254,7 +256,7 @@ def scenario3_horizontal():
     total_time = input_float("  Время симуляции (сек)", default=5.0, 
                             min_val=0.01, max_val=MAX_REASONABLE_TIME)
     
-    wx = 0.0
+    wx = vy / radius if radius > 0 else 0.0
     wy = -vx / radius if radius > 0 else 0.0
     
     ball = Ball(
@@ -292,9 +294,10 @@ def scenario4_wall_collisions():
     mass = input_float("  Масса (кг)", default=0.5, min_val=0.01)
     radius = input_float("  Радиус (м)", default=0.05, min_val=0.01)
     
-    print("\n Начальная скорость:")
+    print("\n Начальная скорость (в горизонтальной плоскости):")
     vx = input_float("  Скорость по X (м/с)", default=2.0)
     vy = input_float("  Скорость по Y (м/с)", default=1.5)
+    print(f"     (Y здесь - вторая горизонтальная координата, не высота)")
     
     print("\n Параметры поверхности:")
     friction = input_float("  Коэффициент трения", default=0.1, min_val=0.0, max_val=1.0)

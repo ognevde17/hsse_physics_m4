@@ -50,6 +50,16 @@ def show_animation(results, ball_radius, surface_angle=0.0, walls=None):
             os.unlink(tmp.name)
 
 
+def show_multiball_animation(results, ball_radii, walls=None):
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.gif') as tmp:
+        anim = create_multiball_animation(results, ball_radii, walls, save_path=tmp.name, fps=15)
+        plt.close()
+        
+        if os.path.exists(tmp.name):
+            st.image(tmp.name)
+            os.unlink(tmp.name)
+
+
 def main():
     
     st.title("⚽ Моделирование движения шара по поверхности")
@@ -171,12 +181,14 @@ def scenario_3_horizontal():
         
         st.subheader("🚀 Начальная скорость")
         vx = st.slider("Скорость по X (м/с)", -MAX_REASONABLE_SPEED, MAX_REASONABLE_SPEED, 3.0, key="hor_vx")
-        vy = 0.0
+        vy = st.slider("Скорость по Y (м/с)", -MAX_REASONABLE_SPEED, MAX_REASONABLE_SPEED, 2.0, key="hor_vy")
         
-        st.info("ℹ️ На горизонтальной поверхности Y координата (высота) не меняется, поэтому vy = 0")
-        st.metric("Скорость", f"{abs(vx):.2f} м/с", f"{abs(vx)*3.6:.1f} км/ч")
+        v_total = np.sqrt(vx**2 + vy**2)
+        st.metric("Общая скорость", f"{v_total:.2f} м/с", f"{v_total*3.6:.1f} км/ч")
         
-        if abs(vx) > 50:
+        st.info("ℹ️ Движение в горизонтальной плоскости (X, Y)")
+        
+        if v_total > 50:
             st.warning(f"⚠️ Высокая скорость!")
     
     with col2:
@@ -202,9 +214,12 @@ def scenario_4_walls():
         
         st.subheader("🚀 Начальная скорость")
         vx = st.slider("Скорость по X (м/с)", -MAX_REASONABLE_SPEED, MAX_REASONABLE_SPEED, 2.0, key="wall_vx")
-        vy = 0.0
+        vy = st.slider("Скорость по Y (м/с)", -MAX_REASONABLE_SPEED, MAX_REASONABLE_SPEED, 1.5, key="wall_vy")
         
-        st.info("ℹ️ Движение на горизонтали: vy = 0")
+        v_total = np.sqrt(vx**2 + vy**2)
+        st.metric("Общая скорость", f"{v_total:.2f} м/с")
+        
+        st.info("ℹ️ В этом сценарии Y - вторая горизонтальная координата (движение в плоскости)")
     
     with col2:
         st.subheader("🧱 Параметры стен")
@@ -235,6 +250,7 @@ def scenario_5_multiball():
     n_balls = st.slider("Количество шаров", 2, 5, 2, key="multi_n")
     
     st.warning("⚠️ Упрощенная версия: все шары с одинаковыми параметрами")
+    st.info("ℹ️ Движение в горизонтальной плоскости (X, Y)")
     
     col1, col2 = st.columns(2)
     
@@ -315,7 +331,7 @@ def run_simulation_slipping(mass, radius, angle, friction, total_time):
 
 def run_simulation_horizontal(mass, radius, vx, vy, friction, total_time):
     with st.spinner("⏳ Выполняется симуляция..."):
-        wx = 0.0
+        wx = vy / radius if radius > 0 else 0.0
         wy = -vx / radius if radius > 0 else 0.0
         
         ball = Ball(mass, radius, [0, 0], [vx, vy], [wx, wy, 0.0])
@@ -327,7 +343,7 @@ def run_simulation_horizontal(mass, radius, vx, vy, friction, total_time):
         
         st.success("✅ Симуляция завершена!")
         
-        v_initial = abs(vx)
+        v_initial = np.sqrt(vx**2 + vy**2)
         v_final = np.linalg.norm(results['velocity'][-1])
         distance = np.linalg.norm(results['position'][-1] - results['position'][0])
         
@@ -344,7 +360,7 @@ def run_simulation_horizontal(mass, radius, vx, vy, friction, total_time):
 
 def run_simulation_walls(mass, radius, vx, vy, friction, boundary, walls, restitution, total_time):
     with st.spinner("⏳ Выполняется симуляция..."):
-        wx = 0.0
+        wx = vy / radius if radius > 0 else 0.0
         wy = -vx / radius if radius > 0 else 0.0
         
         ball = Ball(mass, radius, [0, 0], [vx, vy], [wx, wy, 0.0])
@@ -398,28 +414,36 @@ def run_simulation_multiball(n_balls, mass, radius, friction, boundary, restitut
         st.success("✅ Симуляция завершена!")
         st.metric("Количество шаров", n_balls)
         
-        fig, ax = plt.subplots(figsize=(10, 8))
+        tab1, tab2 = st.tabs(["📊 Траектории", "🎬 Анимация"])
         
-        colors = plt.cm.rainbow(np.linspace(0, 1, n_balls))
-        for i, positions in enumerate(results['positions']):
-            ax.plot(positions[:, 0], positions[:, 1], 
-                   label=f'Шар {i+1}', color=colors[i], alpha=0.7)
-            ax.plot(positions[0, 0], positions[0, 1], 'o', color=colors[i], markersize=10)
+        with tab1:
+            fig, ax = plt.subplots(figsize=(10, 8))
+            
+            colors = plt.cm.rainbow(np.linspace(0, 1, n_balls))
+            for i, positions in enumerate(results['positions']):
+                ax.plot(positions[:, 0], positions[:, 1], 
+                       label=f'Шар {i+1}', color=colors[i], alpha=0.7)
+                ax.plot(positions[0, 0], positions[0, 1], 'o', color=colors[i], markersize=10)
+            
+            ax.axvline(x=boundary, color='gray', linewidth=2, linestyle='--')
+            ax.axvline(x=-boundary, color='gray', linewidth=2, linestyle='--')
+            ax.axhline(y=boundary, color='gray', linewidth=2, linestyle='--')
+            ax.axhline(y=-boundary, color='gray', linewidth=2, linestyle='--')
+            
+            ax.set_xlabel('X (м)', fontsize=12)
+            ax.set_ylabel('Y (м)', fontsize=12)
+            ax.set_title('Траектории шаров', fontsize=14)
+            ax.grid(True, alpha=0.3)
+            ax.legend()
+            ax.axis('equal')
+            
+            st.pyplot(fig)
+            plt.close()
         
-        ax.axvline(x=boundary, color='gray', linewidth=2, linestyle='--')
-        ax.axvline(x=-boundary, color='gray', linewidth=2, linestyle='--')
-        ax.axhline(y=boundary, color='gray', linewidth=2, linestyle='--')
-        ax.axhline(y=-boundary, color='gray', linewidth=2, linestyle='--')
-        
-        ax.set_xlabel('X (м)', fontsize=12)
-        ax.set_ylabel('Y (м)', fontsize=12)
-        ax.set_title('Траектории шаров', fontsize=14)
-        ax.grid(True, alpha=0.3)
-        ax.legend()
-        ax.axis('equal')
-        
-        st.pyplot(fig)
-        plt.close()
+        with tab2:
+            st.info("🎬 Создается анимация, пожалуйста подождите...")
+            ball_radii = [radius] * n_balls
+            show_multiball_animation(results, ball_radii, walls)
 
 
 def display_plots(results, mass, radius, angle, prefix, walls=None):
